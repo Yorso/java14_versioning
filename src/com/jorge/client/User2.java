@@ -41,6 +41,8 @@ import com.jorge.entity.Guide;
  * 		You must use versioning strategy (optimistic locking) to prevent lost updates when implementing a conversation (multiple transactions/[request/response cycles])
  * 		You must use pessimistic locking (database locking) only when you've got multiple database queries being executed on the same data, within a single transactions
  * 
+ * Trying User1.java and User2.java at the same time using "Debug as JAva Application" and setting breackpoints in lines where 'guide.setSalary(xxxx)' instruction is
+ * 
  */
 public class User2 {
 
