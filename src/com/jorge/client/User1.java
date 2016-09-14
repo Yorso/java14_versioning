@@ -38,6 +38,9 @@ import com.jorge.entity.Guide;
  * 		Optimistic locking = No DataBase locking
  * 		Pessimistic locking = DataBase locking = could be used only within a single transaction
  * 
+ * 		You must use versioning strategy (optimistic locking) to prevent lost updates when implementing a conversation (multiple transactions/[request/response cycles])
+ * 		You must use pessimistic locking (database locking) only when you've got multiple database queries being executed on the same data, within a single transactions
+ * 
  */
 public class User1 {
 
@@ -54,26 +57,33 @@ public class User1 {
 																						 // Persistence is imported from javax.persistence.Persistence package, it is not a class created by us
 																						 // "helloworld" persistence unit name is the same name than "<persistence-unit name="helloworld"...>" element in persistence.xml file 
 		
+		// STARTING CONVERSATION (we begin to create entity managers (em)) => from first entity manager created (EntityManager em1 = emf.createEntityManager();) to last entity manager closed (em2.close())
+		// LOADING OBJECTS
 		logger.debug("creating entity manager em1");
 		EntityManager em1 = emf.createEntityManager(); // => Session session = sf.openSession();
 		
 		logger.debug("getting em1 transaction");
 		EntityTransaction txn = em1.getTransaction(); // => Transaction txn = session.getTransaction();
 		
+		// STARTING PERSISTENCE CONTEXT 1 (from begin to commit)
 		logger.debug("beginning em1 transaction");
 		txn.begin();
 		
 		logger.debug("getting guide info");
 		Guide guide = em1.find(Guide.class, 1L);
 		
+		// ENDING PERSISTENCE CONTEXT 1
 		logger.debug("making em1 commit");
 		txn.commit();
 		
 		logger.debug("close em1 entity manager");
 		em1.close();
 		
+		
+		
+		// MODIFYING LOADED OBJECTS
 		logger.debug("setting guide salary with em1 closed");
-		guide.setSalary(3000); // We need to merge this detached object
+		guide.setSalary(3000); // This is a detached object. We need to merge this detached object
 							   //
 							   // A solution is extend the persistence context. It means: close entityManager at 
 		                       // the end of the class after all instructions or in a finally block of a try/catch block => We dont' have to make a merge nor set CascadeType.MERGE in Guide.java class
@@ -81,8 +91,9 @@ public class User1 {
 							   // Another solution is doing what we are doing in this class: 
 							   // merge (Guide mergedGuide = em2.merge(guide);) using another Entity Manager (em2) => We have to make a merge and set CascadeType.MERGE in Guide.java class
 		
-		//************************************
-			
+		
+		
+		// STORING LOADED OBJECTS
 		logger.debug("creating entity manager em2");
 		EntityManager em2 = emf.createEntityManager(); // => Session session = sf.openSession();
 		
@@ -90,17 +101,19 @@ public class User1 {
 		EntityTransaction txn2 = em2.getTransaction(); // => Transaction txn = session.getTransaction();
 		
 		try{
+			// STARTING PERSISTENCE CONTEXT 2 (from begin to commit)
 			logger.debug("beginning em2 transaction");
 			txn2.begin();
 			
 			logger.debug("merging salary guide set above, with em2 open");
 			Guide mergedGuide = em2.merge(guide); // Merging detached object. 'guide' is the detached object
 			
+			// ENDING PERSISTENCE CONTEXT 2
 			logger.debug("making em2 commit");
 			txn2.commit();
 			
 		}
-		catch (OptimisticLockException ole) {
+		catch (OptimisticLockException e) {
 			if (txn2 != null) {
 				logger.error("something was wrong, making rollback of transactions");
 				txn2.rollback(); // If something was wrong, we make rollback
@@ -109,6 +122,7 @@ public class User1 {
 		}
 		finally{
 			if(em2 != null){
+				// ENDING CONVERSATION (we have closed all entity managers (em))
 				logger.debug("close em2 entity manager");
 				em2.close();
 			}
