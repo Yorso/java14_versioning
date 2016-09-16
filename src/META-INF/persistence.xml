@@ -19,6 +19,89 @@
 			<!-- Create/update tables automatically using mapping metadata -->
 			<property name="hibernate.hbm2ddl.auto" value="update" />
 			
+			<!-- 
+				ISOLATION
+				
+				Rules for isolation levels:
+					Isolation level defines the extent to which a transaction is visible to other transactions
+					How and when the changes made by one transaction are made visible to other transactions
+					Should not a transaction be completely isolated from other transactions?
+					
+					From top (SERIALIZABLE) to bottom (READ_UNCOMMITTED):
+						Better performance
+						Lesser data integrity
+						Lesser isolation
+						
+					I.e.:
+						User1 -> start transaction;
+								 select name, salary from guide
+					
+																			User2 -> start transaction;
+																					 update guide set salary=4000 where id=3;
+																					 insert into guide(name,salary,staff_id) values("Max Jeremias",2500,"ER4456D");
+																					 commit;
+		
+					    User1 -> select name, salary from guide
+					 		     commit;
+						
+						
+						
+					SERIALIZABLE: <-- Highest isolation-level; provides full/complete isolation
+								  The transactions are executed serially what means slow performance 	   
+								  First all transactions and commits of User1. Then it executes transactions and commit of User2 
+								  User1's last select doesn't get the info updated and inserted by User2
+								  True isolation -> slow performance 
+					
+					REPEATABLE_READ: 
+								  First: first select of User1. Second update and insert of User2. Then last select of User1
+								  At this point, last select of User1 gets insert info but not update info of User2 => Phantom read
+								  This is the default Level in MySQL
+								  Phantom reads are possible
+								  Softer isolation level
+					
+					READ_COMMITTED: 
+								  First: first select of User1. Second update and insert of User2. Then last select of User1
+								  At this point, last select of User1 gets insert and update info of User2
+								  This is the default Level in Oracle
+								  Un-repeatable reads are possible
+					
+					READ_UNCOMMITTED: <-- lowest isolation-level
+									User1 -> start transaction;
+											 select name, salary from guide
+									
+																							User2 -> start transaction;
+																									 update guide set salary=4000 where id=3;
+																									 insert into guide(name,salary,staff_id) values("Max Jeremias",2500,"ER4456D");
+																									 // There is not committed yet
+								    User1 -> select name, salary from guide
+								    				
+								    														User2 -> rollback;
+									
+									First: first select of User1. Second update and insert of User2. Then last select of User1
+								    At this point, last select of User1 gets insert and update info of User2 even without make commit in User2 transactions
+									It could even get rollback
+									Info it updated in guide table without make commit
+									Dirty reads are possible
+									Softer isolation level
+					
+					
+				MySQL supports all the 4 levels. REPEATABLE READ is by default
+				Oracle supports SERIALIZABLE and READ_COMMITTED. READ_COMMITTED is by default
+				
+				select @@tx_isolation; gets the info about level in DBMS
+				set global transaction isolation level SERIALIZABLE; changes level in DBMS
+					
+				Or we can change these levels this way:
+					Sets the JDBC transaction isolation level:
+						1=READ_UNCOMMITTED
+						2=READ_COMMITTED (by default in Oracle)
+						4=REPEATABLE_READ (by default in MySQL)
+						8=SERIALIZABLE	
+						
+					<property name="hibernate.connection.isolation" value="x"/>
+			-->
+			<property name="hibernate.connection.isolation" value="2"/><!--value=2 => 2=READ_COMMITTED -->
+			
 			<!-- Pretty print the SQL in the log file and console -->
 			<property name="hibernate.format_sql" value="true" />
 				
