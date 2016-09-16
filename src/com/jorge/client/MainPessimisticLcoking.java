@@ -17,9 +17,9 @@ import org.apache.log4j.Logger;
  * Implementing a business process that spans through multiple transactions should be done using the versioning strategy
  * to prevent lost updates
  * 
- * What is about if two users are trying to update the same data in DB?
- * The last update is who keeps in DB (i.e., data updated by User2) => Last commit wins!!!
- * We will not know if there had be another update before (i.e., data updated by User1)
+ * What about if two users are trying to update the same data in DB?
+ * The last update is what keeps in DB (i.e., data updated by User2) => Last commit wins!!!
+ * We will not know if there have been another updates before (i.e., data updated by User1)
  *
  * The solution to that is using @Version annotation in Guide entity:
  * 		Data updated by User1 => salary = 3000   version 1
@@ -34,12 +34,13 @@ import org.apache.log4j.Logger;
  * An exception will be thrown, to prevent a lost update, if Hibernate doesn't find the in-memory version of an
  * entity to be same as the database version (current version): javax.persistence.OptimisticLockException (Check catch block)
  *
- * Optimistic locking is the official name of the Versioning strategy to prevent lost updates
+ * Optimistic locking is the official name of the versioning strategy to prevent lost updates
  * 		Optimistic locking = No DataBase locking
  * 		Pessimistic locking = DataBase locking = could be used only within a single transaction
  * 
  * 		You must use versioning strategy (optimistic locking) to prevent lost updates when implementing a conversation (multiple transactions/[request/response cycles])
  * 		You must use pessimistic locking (database locking) only when you've got multiple database queries being executed on the same data, within a single transactions
+ * 
  * 
  */
 public class MainPessimisticLcoking {
